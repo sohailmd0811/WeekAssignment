@@ -1,0 +1,112 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <limits>
+#include <unordered_map>
+#include <algorithm>
+
+using namespace std;
+
+const int INF = numeric_limits<int>::max(); 
+
+struct Edge {
+    int destination;  
+    int weight;       
+};
+
+typedef vector<vector<Edge>> Graph;  
+
+pair<vector<int>, vector<int>> dijkstra(const Graph &graph, int sourceNode) {
+    int numNodes = graph.size();
+    vector<int> distances(numNodes, INF);  
+    vector<int> previousNode(numNodes, -1); 
+    distances[sourceNode] = 0;
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> priorityQueue;
+    priorityQueue.push({0, sourceNode});
+
+    while (!priorityQueue.empty()) {
+        int currentDistance = priorityQueue.top().first;
+        int currentNode = priorityQueue.top().second;
+        priorityQueue.pop();
+
+        if (currentDistance > distances[currentNode]) continue;
+
+        for (const Edge &edge : graph[currentNode]) {
+            int neighbor = edge.destination;
+            int edgeWeight = edge.weight;
+
+            if (distances[currentNode] + edgeWeight < distances[neighbor]) {
+                distances[neighbor] = distances[currentNode] + edgeWeight;
+                previousNode[neighbor] = currentNode;
+                priorityQueue.push({distances[neighbor], neighbor});
+            }
+        }
+    }
+
+    return {distances, previousNode};
+}
+
+vector<int> reconstructPath(const vector<int> &previousNode, int sourceNode, int destinationNode) {
+    vector<int> path;
+    for (int currentNode = destinationNode; currentNode != -1; currentNode = previousNode[currentNode]) {
+        path.push_back(currentNode);
+    }
+    reverse(path.begin(), path.end());
+
+    if (path.front() == sourceNode) {
+        return path;
+    }
+    return {};  // No valid path
+}
+
+int main() {
+    Graph graph(5);
+    graph[0].push_back({1, 10});  // A -> B (weight 10)
+    graph[1].push_back({2, 2});   // B -> C (weight 2)
+    graph[1].push_back({4, 4});   // B -> E (weight 4)
+    graph[0].push_back({4, 3});   // A -> E (weight 3)
+    graph[4].push_back({1, 1});   // E -> B (weight 1)
+    graph[4].push_back({2, 8});   // E -> C (weight 8)
+    graph[4].push_back({3, 2});   // E -> D (weight 2)
+    graph[2].push_back({3, 9});   // C -> D (weight 9)
+    graph[3].push_back({2, 7});   // D -> C (weight 7)
+
+    unordered_map<int, char> nodeMapping = {{0, 'A'}, {1, 'B'}, {2, 'C'}, {3, 'D'}, {4, 'E'}};
+
+    char startNodeChar, endNodeChar;
+     cout << "Type in capital letters(A-E): ";
+    cout << "Type starting node (A-E): ";
+    cin >> startNodeChar;
+    cout << "Type end node (A-E): ";
+    cin >> endNodeChar;
+
+    if (startNodeChar < 'A' || startNodeChar > 'E' || endNodeChar < 'A' || endNodeChar > 'E') {
+        cout << "Invalid input. Please enter nodes between A and E." << endl;
+        return 1;
+    }
+
+    int startNode = startNodeChar - 'A';
+    int endNode = endNodeChar - 'A';
+
+    auto result = dijkstra(graph, startNode);
+    vector<int> distances = result.first;
+    vector<int> previousNode = result.second;
+
+    if (distances[endNode] == INF) {
+        cout << "No path found from " << startNodeChar << " to " << endNodeChar << endl;
+    } else {
+        cout << "Shortest path distance from " << startNodeChar << " to " << endNodeChar << " is " << distances[endNode] << endl;
+        vector<int> path = reconstructPath(previousNode, startNode, endNode);
+        cout << "Path: ";
+        for (int node : path) {
+            cout << nodeMapping[node] << " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
+
+
+
